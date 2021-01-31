@@ -411,5 +411,86 @@ df.to_excel('./test.xlsx')
 # In[ ]:
 
 
+# Summary
+
+#1. 라이브러리 불러오기
+#2. 브라우저 열기 <-- chromedriver.exe / chromedriver
+#3. 웹페이지 접속 <-- browser.get(url)
+#4. 내가 원하는 정보가 있는지 확인
+#5. 정보가 있다면 --> browser.page_source 데이터 다운받기
+#6. 수집하고자 하는 정보 찾기 BeautifulSoup, select()
+ #   - soup.select('태그정보') "태그정보에 해당하는 모든 태그 찾아줘"
+ #   - soup.select('태그명')    ex) soup.select('span')
+ #   - soup.select('.class속성값') ex) soup.select('.presentor')
+ #   - soup.select('태그명.class속성값')
+ #   - soup.select('#id속성값')    ex) soup.select('#weeks1')
+ #   - soup.selelct('상위태그정보 > 하위태그정보(자식)')  ex) soup.select('p > span'
+ #   - soup.seleclt('상귀태그정보 하위태그정보(자손)')        자식을 포함한 하위태그 찾기
+ #     soup.select('p > a > span')   "p 태그 바로 아래에 a 태그 바로 아래에 span 태그 다 찾아줘'
+ #       soup.select('p span')         "p 태그      아라에 있는               span 태그 다 찾아줘'
+#7. 태그 --> 내가 원한느 값만 선택
+#    - tag.text : 화면에 보이는 부분/태그 기호 앞뒤로 다 없앤 것 추출
+#    - tag['속성명'] :" 태그에서 속성의 값"만 추출     ex) tag['href'] 
+#8. 리스트 저장
+#    "리스트의 리스트 형태로 저장" --> 행/열 맞춰서
+#9. 엑셀 저장
+#    - import pandas as pd 
+#    - pd.DataFrame()
+#    - .to_excel('파일명.xlsx')
+
+# 유튜브 크롤링
+#라이브러리 불러오기
+from selenium import webdriver
+from bs4 import BeautifulSoup
+import pandas as pd
+import time   # 접속 후에 몇초 기다려줘...(접속 - page_source 받기  사이에 ... )
+import random
+
+
+#크롬창 열기 (최초 1회만 실행)
+browser = webdriver.Chrome('C:/informs/Chromedriver.exe')
+
+# 숫자 정수 range 함수
+#page_list = range(시작,끝나는 지점 +1)
+page_list = range(1,11)
+for page in page_list : 
+    print(page)
+    time.sleep(1) # 괄호안의 숫자만큼 쉰 후에 작업 실행한다.
+    #time.sleep(random.uniform(2,5)) # 2~5초 사이로 랜덤하게 쉬어줘
+
+results = []
+
+page_list = range(1,11)
+
+for page in page_list: 
+    url = f'https://youtube-rank.com/board/bbs/board.php?bo_table=youtube&page={page}'
+    browser.get(url)
+    # 접속 후에 몇초 기다려줘...(접속 - page_source 받기  사이에 ... )
+    time.sleep(2)
+
+    html = browser.page_source
+    soup = BeautifulSoup(html, 'html.parser')
+    channel_list = soup.select('form > table > tbody > tr')
+    for channel in channel_list :
+        title = channel.select('h1 > a')[0].text.strip()
+        category = channel.select('p.category')[0].text.strip()
+        subscriber = channel.select('td.subscriber_cnt')[0].text.strip()
+        view = channel.select('td.view_cnt')[0].text.strip()
+        video = channel.select('td.video_cnt')[0].text.strip()
+        data = [title,category,subscriber, view, video]
+        # print(data)
+        results.append(data)
+
+len(results)
+
+# 엑셀파일에 저장하기
+df = pd.DataFrame(results)
+df.columns =['채널명','카테고리','구독자수','조회수','영상수']
+filename = f'유튜브채널랭크_Top{len(results)}.xlsx'
+filename = f'./유튜브채널랭크_Top{len(results)}.xlsx' #가능하면 현재위치를 알려주기 위해서 ,/를 붙이는 것이 좋다.
+df.to_excel(filename, index=False)
+
+#크롤링 중에 사이트를 클릭하거나 움직이면 클롤링 중에 데러가 나는 경우가 잇다.
+#반응형 사이트의 경우 창 크기에 따라 데이터의 양이 달라질 수 있으므로 주의해야 한다.
 
 
